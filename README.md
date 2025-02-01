@@ -15,7 +15,7 @@ Connect to it via a web browser on the address that gets displayed at the beginn
     <img src="Screenshot%202025-02-01%20103553.png" width="50%" alt="Screenshot">
 </div>
 You can change the model from the list at any time, the AI will do its best to continue the conversation.
-To close the server, press `CTRL+C`, this will ensure the loaded model stops running.
+To close the server, press ```CTRL+C```, this will ensure the loaded model stops running.
 
 ## Features
 - Change AI model on the fly
