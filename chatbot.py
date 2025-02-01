@@ -1,24 +1,42 @@
 import requests
 from flask import Flask, request, jsonify, render_template, Response
 import json
+import subprocess
+import atexit
+import threading
 
 app = Flask(__name__)
 
 API_URL = "http://localhost:11434/api/chat"
-MODEL_NAME = "deepseek-r1:8b"
 
 messages = []  # Global variable to store messages
 
+def get_models():
+    result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
+    models = result.stdout.splitlines()
+    if models:
+        models.pop(0)
+    models = [model.split()[0] for model in models]
+    print(f"Available models: {models}")  # Debugging line
+    return models
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+    models = get_models()
+    return render_template("index.html", models=models)
 
 @app.route("/chat", methods=["GET"])
 def chat():
     user_message = request.args.get("message")
-    selected_model = request.args.get("model", MODEL_NAME)
+    selected_model = request.args.get("model")
     messages.append({"role": "user", "content": user_message})
     return Response(generate_response(user_message, selected_model), content_type='text/event-stream')
+
+@app.route("/stop_model", methods=["GET"])
+def stop_model():
+    model_name = request.args.get("model")
+    threading.Thread(target=subprocess.run, args=(["ollama", "stop", model_name],)).start()
+    return jsonify({"status": "stopped", "model": model_name})
 
 def generate_response(user_message, model_name):
     payload = {
@@ -38,6 +56,16 @@ def generate_response(user_message, model_name):
     messages.append({"role": "assistant", "content": combined_message})
     yield "event: close\n\n"
     print(f"Updated messages: {json.dumps(messages, indent=2)}")  # Debugging line
+
+def stop_all_models():
+    try:
+        models = get_models()
+        for model in models:
+            threading.Thread(target=subprocess.run, args=(["ollama", "stop", model],)).start()
+    except Exception as e:
+        print(f"Error stopping models: {e}")
+
+atexit.register(stop_all_models)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -11,8 +11,9 @@
         <div class="chat-messages" id="chat-messages"></div>
         <div class="control-container">
             <select id="model-select">
-                <option value="deepseek-r1:8b">deepseek-r1:8b</option>
-                <option value="deepseek-r1:14b">deepseek-r1:14b</option>
+                {% for model in models %}
+                    <option value="{{ model }}">{{ model }}</option>
+                {% endfor %}
             </select>
             <button id="stop-button" onclick="stopResponse()">Stop</button>
         </div>
@@ -64,7 +65,14 @@
         function stopResponse() {
             if (eventSource) {
                 eventSource.close();
+                stopModel();
             }
+        }
+
+        function stopModel() {
+            const modelSelect = document.getElementById('model-select');
+            const selectedModel = modelSelect.value;
+            fetch(`/stop_model?model=${encodeURIComponent(selectedModel)}`);
         }
 
         // Add event listener to send message on Enter key press
