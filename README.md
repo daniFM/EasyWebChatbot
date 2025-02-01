@@ -2,7 +2,15 @@
 This is just a python and web envelope for the Ollama API, to allow for chatting to different AI models in your local network.
 
 ## Setup
-Install dependencies.
+### Install ollama
+This project uses the [Ollama](https://ollama.com) API. It needs to be installed to start using the server.
+After Ollama is installed, go ahead and try installing an AI model. For example:
+```
+ollama pull deepseek-r1:14b
+```
+This one needs a bit of a beefy PC, you can try a lower distilled model from their [list](https://ollama.com/library/deepseek-r1:8b).
+
+### Install dependencies
 In the project folder, open a command prompt and run:
 ```
 pip install flask
