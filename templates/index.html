@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="control-container">
+            <select id="model-select">
+                <option value="deepseek-r1:8b">deepseek-r1:8b</option>
+                <option value="deepseek-r1:14b">deepseek-r1:14b</option>
+            </select>
+            <button id="stop-button" onclick="stopResponse()">Stop</button>
+        </div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        let eventSource;
+
+        function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value;
+            if (message.trim() === '') return;
+
+            const modelSelect = document.getElementById('model-select');
+            const selectedModel = modelSelect.value;
+
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += `<div class="message user">${marked.parse(message)}</div>`;
+            userInput.value = '';
+
+            eventSource = new EventSource(`/chat?message=${encodeURIComponent(message)}&model=${encodeURIComponent(selectedModel)}`);
+            let botMessageElement = document.createElement('div');
+            botMessageElement.className = 'message bot';
+            chatMessages.appendChild(botMessageElement);
+
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                const botMessage = data.message.content;
+                const botmessages = botMessage.split('</think>');
+                if (botmessages.length > 1) {
+                    let botFormattedNessage = botmessages[0].replace(/\n/g, '<br>');
+                    botFormattedNessage = botFormattedNessage + '</think>\n' + marked.parse(botmessages[1]);
+                    botMessageElement.innerHTML = botFormattedNessage;
+                } else {
+                    botMessageElement.innerHTML = marked.parse(botMessage);
+                }
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            eventSource.onerror = function() {
+                eventSource.close();
+            };
+        }
+
+        function stopResponse() {
+            if (eventSource) {
+                eventSource.close();
+            }
+        }
+
+        // Add event listener to send message on Enter key press
+        document.getElementById('user-input').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
