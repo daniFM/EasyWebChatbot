@@ -4,12 +4,28 @@ import json
 import subprocess
 import atexit
 import threading
+import os
 
 app = Flask(__name__)
 
 API_URL = "http://localhost:11434/api/chat"
+CONVERSATIONS_FILE = "conversations.json"
 
-messages = []  # Global variable to store messages
+conversations = {}  # Global variable to store conversations
+conversation_name = None  # Global variable to store the conversation name
+
+def load_conversations():
+    if os.path.exists(CONVERSATIONS_FILE):
+        with open(CONVERSATIONS_FILE, 'r') as file:
+            data = json.load(file)
+            return data.get("conversations", {}), data.get("conversation_name", None)
+    return {}, None
+
+def save_conversations():
+    with open(CONVERSATIONS_FILE, 'w') as file:
+        json.dump({"conversations": conversations, "conversation_name": conversation_name}, file, indent=2)
+
+conversations, conversation_name = load_conversations()
 
 def get_models():
     result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
@@ -27,10 +43,15 @@ def home():
 
 @app.route("/chat", methods=["GET"])
 def chat():
+    global conversation_name
     user_message = request.args.get("message")
     selected_model = request.args.get("model")
-    messages.append({"role": "user", "content": user_message})
-    return Response(generate_response(user_message, selected_model), content_type='text/event-stream')
+    conversation_name = request.args.get("conversation")
+    if conversation_name not in conversations:
+        conversations[conversation_name] = []
+    conversations[conversation_name].append({"role": "user", "content": user_message})
+    save_conversations()
+    return Response(generate_response(user_message, selected_model, conversation_name), content_type='text/event-stream')
 
 @app.route("/stop_model", methods=["GET"])
 def stop_model():
@@ -38,10 +59,14 @@ def stop_model():
     threading.Thread(target=subprocess.run, args=(["ollama", "stop", model_name],)).start()
     return jsonify({"status": "stopped", "model": model_name})
 
-def generate_response(user_message, model_name):
+@app.route("/load_conversations", methods=["GET"])
+def load_conversations_route():
+    return jsonify({"conversations": conversations, "conversation_name": conversation_name})
+
+def generate_response(user_message, model_name, conversation_name):
     payload = {
         "model": model_name,
-        "messages": messages,
+        "messages": conversations[conversation_name],
         "stream": True
     }
     print(f"Sending payload to API: {json.dumps(payload, indent=2)}")  # Debugging line
@@ -53,9 +78,10 @@ def generate_response(user_message, model_name):
             message_content = response_data.get("message", {}).get("content", "")
             combined_message += message_content
             yield f"data: {json.dumps({'message': {'content': combined_message}})}\n\n"
-    messages.append({"role": "assistant", "content": combined_message})
+    conversations[conversation_name].append({"role": "assistant", "content": combined_message})
+    save_conversations()
     yield "event: close\n\n"
-    print(f"Updated messages: {json.dumps(messages, indent=2)}")  # Debugging line
+    print(f"Updated conversations: {json.dumps(conversations, indent=2)}")  # Debugging line
 
 def stop_all_models():
     try:
