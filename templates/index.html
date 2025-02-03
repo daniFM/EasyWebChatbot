@@ -15,11 +15,11 @@
                     <option value="{{ model }}">{{ model }}</option>
                 {% endfor %}
             </select>
-            <button id="stop-button" onclick="stopResponse()">Stop</button>
+            <button id="stop-button" onclick="stopResponse()" disabled>Stop</button>
         </div>
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type a message...">
-            <button onclick="sendMessage()">Send</button>
+            <button id="send-button" onclick="sendMessage()">Send</button>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -45,6 +45,10 @@
 
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
+            document.getElementById('stop-button').disabled = false;
+            document.getElementById('user-input').disabled = true;
+            document.getElementById('send-button').disabled = true;
+
             eventSource.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 const botMessage = data.message.content;
@@ -57,10 +61,19 @@
                     botMessageElement.innerHTML = marked.parse(botMessage);
                 }
                 chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                if (data.done) {
+                    document.getElementById('stop-button').disabled = true;
+                    document.getElementById('user-input').disabled = false;
+                    document.getElementById('send-button').disabled = false;
+                }
             };
 
             eventSource.onerror = function() {
                 eventSource.close();
+                document.getElementById('stop-button').disabled = true;
+                document.getElementById('user-input').disabled = false;
+                document.getElementById('send-button').disabled = false;
             };
         }
 
@@ -68,6 +81,9 @@
             if (eventSource) {
                 eventSource.close();
                 stopModel();
+                document.getElementById('stop-button').disabled = true;
+                document.getElementById('user-input').disabled = false;
+                document.getElementById('send-button').disabled = false;
             }
         }
 
