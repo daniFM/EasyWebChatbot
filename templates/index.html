@@ -43,6 +43,8 @@
             botMessageElement.className = 'message bot';
             chatMessages.appendChild(botMessageElement);
 
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
             eventSource.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 const botMessage = data.message.content;
