@@ -48,6 +48,7 @@ def chat():
     selected_model = request.args.get("model")
     conversation_name = request.args.get("conversation")
     if conversation_name not in conversations:
+        conversation_name = conversation_name[:32]  # Limit conversation name to 32 characters
         conversations[conversation_name] = []
     conversations[conversation_name].append({"role": "user", "content": user_message})
     save_conversations()

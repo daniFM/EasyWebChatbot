@@ -167,6 +167,11 @@ think {
     cursor: pointer;
 }
 
+.new-conversation {
+    font-weight: bold;
+    margin: 10px;
+}
+
 /* Custom scrollbar styles */
 ::-webkit-scrollbar {
     width: 12px;

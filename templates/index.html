@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="menu-container" id="menu-container">
-        <div class="menu-item" onclick="createNewConversation()">+ New Conversation</div>
+        <button class="new-conversation" onclick="createNewConversation()">+ New</div>
     </div>
     <div class="chat-container">
         <div class="chat-messages" id="chat-messages"></div>
@@ -37,6 +37,10 @@
                     const menuContainer = document.getElementById('menu-container');
                     const conversations = data.conversations;
                     const conversationNames = Object.keys(conversations).sort();
+                    // Clear existing conversation entries
+                    const newConversationButton = document.querySelector('.new-conversation');
+                    menuContainer.innerHTML = '';
+                    menuContainer.appendChild(newConversationButton);
                     conversationNames.forEach(name => {
                         const menuItem = document.createElement('div');
                         menuItem.className = 'menu-item';
@@ -95,7 +99,7 @@
             if (message.trim() === '') return;
 
             if (!currentConversationName) {
-                currentConversationName = message;
+                currentConversationName = message.length > 32 ? message.substring(0, 32) : message;
                 const menuContainer = document.getElementById('menu-container');
                 const menuItem = document.createElement('div');
                 menuItem.className = 'menu-item';
