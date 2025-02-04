@@ -12,20 +12,19 @@ API_URL = "http://localhost:11434/api/chat"
 CONVERSATIONS_FILE = "conversations.json"
 
 conversations = {}  # Global variable to store conversations
-conversation_name = None  # Global variable to store the conversation name
 
 def load_conversations():
     if os.path.exists(CONVERSATIONS_FILE):
         with open(CONVERSATIONS_FILE, 'r') as file:
             data = json.load(file)
-            return data.get("conversations", {}), data.get("conversation_name", None)
-    return {}, None
+            return data.get("conversations")
+    return {}
 
 def save_conversations():
     with open(CONVERSATIONS_FILE, 'w') as file:
-        json.dump({"conversations": conversations, "conversation_name": conversation_name}, file, indent=2)
+        json.dump({"conversations": conversations}, file, indent=2)
 
-conversations, conversation_name = load_conversations()
+conversations = load_conversations()
 
 def get_models():
     result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
@@ -43,7 +42,6 @@ def home():
 
 @app.route("/chat", methods=["GET"])
 def chat():
-    global conversation_name
     user_message = request.args.get("message")
     selected_model = request.args.get("model")
     conversation_name = request.args.get("conversation")
@@ -62,7 +60,7 @@ def stop_model():
 
 @app.route("/load_conversations", methods=["GET"])
 def load_conversations_route():
-    return jsonify({"conversations": conversations, "conversation_name": conversation_name})
+    return jsonify({"conversations": conversations})
 
 def generate_response(user_message, model_name, conversation_name):
     payload = {
